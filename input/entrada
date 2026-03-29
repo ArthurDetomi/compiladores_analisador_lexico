@@ -1,0 +1,44 @@
+/*
+nasjkdbahjsdgashjk  hjghjasgdhjghj  hjg
+asdikahsdgasdjko
+asdkjasgdjasgd
+asdhasghsdjiaghsdko
+ashasgal
+*/
+
+int main() {
+  // comment
+  int idade_usuario = 25;
+  float salario_atual = 3500.50;
+
+  // comment
+  char inicial = 'A';
+  char plica = '\'';
+
+  // comment
+  char texto = "Ola, \"Mundo\"!\n";
+
+  // comment
+  if (idade_usuario >= 18 == 1) {
+    salario_atual = salario_atual + 500.0;
+    idade_usuario++;
+  } else {
+    salario_atual = salario_atual - 100;
+  }
+
+  // comment
+  while (idade_usuario != 30) {
+    idade_usuario = idade_usuario + 1;
+    continue;
+  }
+
+  // comment
+  int vetor[5];
+  vetor[0] = 10;
+
+  // comment
+  int preco = 10 @5;
+#
+
+  return 0;
+}
