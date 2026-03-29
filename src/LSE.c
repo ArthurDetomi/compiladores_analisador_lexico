@@ -112,7 +112,6 @@ void exibir_tokens(Lista *li) {
   }
 
   printf("\n--- RESULTADO DA ANALISE LEXICA ---\n");
-  // Adicionado o cabeçalho CODIGO
   printf("%-7s | %-20s | %-20s | %-5s | %-5s\n", "CODIGO", "LEXEMA", "TIPO",
          "LINHA", "COLUNA");
   printf("---------------------------------------------------------------------"
@@ -123,7 +122,6 @@ void exibir_tokens(Lista *li) {
   while (atual != NULL) {
     Token t = atual->info;
 
-    // t.type no primeiro %d imprime o número exato do seu enum
     printf("%-7d | %-20s | %-20s | %-5d | %-5d\n", t.type, t.lexema,
            obter_nome_token(t.type), t.pos.linha, t.pos.coluna);
 
