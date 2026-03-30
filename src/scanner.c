@@ -33,6 +33,7 @@ Token criar_token(char *lexema, TokenType type, Posicao p) {
   token.lexema = (char *)malloc(strlen(lexema) + 1);
   token.pos = p;
   token.type = type;
+  token.codigo = type;
 
   strcpy(token.lexema, lexema);
 

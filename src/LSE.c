@@ -122,7 +122,7 @@ void exibir_tokens(Lista *li) {
   while (atual != NULL) {
     Token t = atual->info;
 
-    printf("%-7d | %-20s | %-20s | %-5d | %-5d\n", t.type, t.lexema,
+    printf("%-7d | %-20s | %-20s | %-5d | %-5d\n", t.codigo, t.lexema,
            obter_nome_token(t.type), t.pos.linha, t.pos.coluna);
 
     atual = atual->prox;
