@@ -39,6 +39,15 @@ Token criar_token(char *lexema, TokenType type, Posicao p) {
   return token;
 }
 
+/*
+  Coleta identificador do arquivo de código fonte
+
+  O identificador pode começar com caracter [a-z] ou underline pode conter
+  números após o primeiro caracter.
+
+  Ex:
+  _ident123
+*/
 void coletar_ident_keyword(FILE *arq, char c_inicial, Lista *lista_tokens,
                            Posicao *p) {
   int capacidade = 16;
@@ -52,13 +61,13 @@ void coletar_ident_keyword(FILE *arq, char c_inicial, Lista *lista_tokens,
 
   char c = c_inicial;
 
+  // Se é um número ou underline
   while (isalnum(c) || c == '_') {
     if (index >= capacidade - 1) {
       capacidade *= 2;
-
       char *temp = (char *)realloc(lexema, capacidade * sizeof(char));
       if (!temp) {
-        perror("Erro de realocação de memória para o lexema");
+        perror("Erro de realocação de memória para o número");
         free(lexema);
         exit(1);
       }
@@ -72,6 +81,8 @@ void coletar_ident_keyword(FILE *arq, char c_inicial, Lista *lista_tokens,
   lexema[index] = '\0';
 
   if (c != EOF) {
+    // Volta o carrinho para o caracter anterior que foi consumido e finalizou o
+    // while anterior
     ungetc(c, arq);
   }
 
@@ -87,6 +98,14 @@ void coletar_ident_keyword(FILE *arq, char c_inicial, Lista *lista_tokens,
   free(lexema);
 }
 
+/*
+  Coleta número:
+
+  Coletar tanto números inteiros como flutuantes.
+
+  Ex:
+  123, 12.4, 45
+*/
 void coletar_numero(FILE *arq, char c_inicial, Lista *lista_tokens,
                     Posicao *p) {
   int capacidade = 16;
@@ -134,11 +153,18 @@ void coletar_numero(FILE *arq, char c_inicial, Lista *lista_tokens,
 
     c = fgetc(arq);
 
+    /*
+      Se após um ponto encontrou um valor não númerico, portanto há um erro
+      aqui:
+
+      Ex: 123.a => (123)Token
+
+      Portanto irá considerar apenas a parte inteira como token
+    */
     if (!isdigit(c)) {
-      lexema[index] = '\0';
+      is_inteiro = 1;
       disparar_erro("Numero de ponto flutuante mal formatado", p->linha,
                     p->coluna + index, lexema);
-      return;
     }
 
     while (isdigit(c)) {
@@ -160,6 +186,7 @@ void coletar_numero(FILE *arq, char c_inicial, Lista *lista_tokens,
   lexema[index] = '\0';
 
   if (c != EOF) {
+    // Volta o carrinho
     ungetc(c, arq);
   }
 
@@ -175,6 +202,15 @@ void coletar_numero(FILE *arq, char c_inicial, Lista *lista_tokens,
   free(lexema);
 }
 
+/*
+  Coleta strings
+
+  Coleta strings, devem começar e terminar com aspas duplas, o token formado não
+  irá conter as aspas duplas de inicio e fim
+
+  Ex: "Arthur" => (Arthur)Token
+
+*/
 void coletar_string(FILE *arq, char c_inicial, Lista *lista_tokens,
                     Posicao *p) {
   int capacidade = 16;
@@ -187,6 +223,7 @@ void coletar_string(FILE *arq, char c_inicial, Lista *lista_tokens,
   }
 
   lexema[index++] = c_inicial;
+
   char c = fgetc(arq);
 
   while (c != '"' && c != EOF) {
@@ -206,10 +243,8 @@ void coletar_string(FILE *arq, char c_inicial, Lista *lista_tokens,
   }
 
   if (c == EOF) {
-    lexema[index] = '\0';
     disparar_erro("String nao fechada antes do fim do arquivo", p->linha,
                   p->coluna, lexema);
-    return;
   } else {
     lexema[index++] = c;
   }
@@ -226,6 +261,14 @@ void coletar_string(FILE *arq, char c_inicial, Lista *lista_tokens,
   free(lexema);
 }
 
+/*
+  Coleta caracteres
+
+  Coleta caracters do tipo:
+  '[a-z]' ou '\[a-z]'
+  Ex:
+  '\n', 'a'
+*/
 void coletar_char(FILE *arq, char c_inicial, Lista *lista_tokens, Posicao *p) {
   int capacidade = 5;
   int index = 0;
@@ -241,6 +284,7 @@ void coletar_char(FILE *arq, char c_inicial, Lista *lista_tokens, Posicao *p) {
   char c = fgetc(arq);
 
   if (c != EOF) {
+
     lexema[index++] = c;
 
     if (c == '\\') {
@@ -254,12 +298,19 @@ void coletar_char(FILE *arq, char c_inicial, Lista *lista_tokens, Posicao *p) {
     if (c == '\'') {
       lexema[index++] = c;
     } else {
+      // ERRO: O char não fechou corretamente (ex: 'ab')
       lexema[index] = '\0';
+
       disparar_erro("Caractere mal formatado ou nao fechado", p->linha,
                     p->coluna, lexema);
-      return;
-      if (c != EOF)
+
+      // Devolve o caracter, volta carrinho
+      if (c != EOF) {
         ungetc(c, arq);
+      }
+
+      free(lexema);
+      return;
     }
   }
 
@@ -282,6 +333,7 @@ void ignorar_comentario_linha(FILE *arq, Posicao *p) {
     p->coluna++;
   }
 
+  // Devolve o \n para poder contar a linha posteriormente
   if (c == '\n') {
     ungetc(c, arq);
   }
@@ -299,6 +351,7 @@ void ignorar_comentario_bloco(FILE *arq, Posicao *p) {
       p->coluna++;
     }
 
+    // Buscando o */ de fechamento
     if (estado == 0 && c == '*') {
       estado = 1;
     } else if (estado == 1 && c == '/') {
@@ -314,6 +367,10 @@ void ignorar_comentario_bloco(FILE *arq, Posicao *p) {
   }
 }
 
+/*
+  Coleta operadores do tipo:
+  Ex: =, /, *, <=, >=...
+*/
 void coletar_operadores(FILE *arq, char c_inicial, Lista *lista_tokens,
                         Posicao *p) {
   int capacidade = 3;
@@ -337,6 +394,7 @@ void coletar_operadores(FILE *arq, char c_inicial, Lista *lista_tokens,
       lexema[index++] = next_char;
     } else {
       type = OP_SOMA;
+      // Devolve o caracter
       ungetc(next_char, arq);
     }
     break;
